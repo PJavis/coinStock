@@ -1,0 +1,80 @@
+version: '2.1'
+
+services:
+  namenode:
+    image: apache/hadoop:3
+    hostname: namenode
+    command: [ "hdfs", "namenode" ]
+    depends_on:
+      - resourcemanager
+      - nodemanager
+    ports:
+      - 9870:9870
+    env_file:
+      - ./config-hadoop
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+    networks:
+      - broker-kafka
+    volumes:
+      - hadoop:/home/
+    restart: on-failure
+
+  datanode1:
+    image: apache/hadoop:3
+    command: [ "hdfs", "datanode" ]
+    depends_on:
+      - namenode
+    env_file:
+      - ./config-hadoop
+    networks:
+      - broker-kafka
+    volumes:
+      - hadoop:/home/
+    restart: on-failure
+
+  datanode2:
+    image: apache/hadoop:3
+    command: [ "hdfs", "datanode" ]
+    depends_on:
+      - namenode
+    env_file:
+      - ./config-hadoop
+    networks:
+      - broker-kafka
+    volumes:
+      - hadoop:/home/
+    restart: on-failure
+
+  resourcemanager:
+    image: apache/hadoop:3
+    hostname: resourcemanager
+    command: [ "yarn", "resourcemanager" ]
+    ports:
+      - 8088:8088
+    env_file:
+      - ./config-hadoop
+    volumes:
+      - ./test.sh:/opt/test.sh
+    networks:
+      - broker-kafka
+    restart: on-failure
+
+  nodemanager:
+    image: apache/hadoop:3
+    hostname: nodemanager
+    command: [ "yarn", "nodemanager" ]
+    env_file:
+      - ./config-hadoop
+    networks:
+      - broker-kafka
+    volumes:
+      - hadoop:/home/
+    restart: on-failure
+
+volumes:
+  hadoop:
+
+networks:
+  broker-kafka:
+    driver: bridge
