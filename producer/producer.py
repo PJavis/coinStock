@@ -28,15 +28,18 @@ def default(args):
             'name': coin_data['name'],
             'date_time': datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"),
             'current_price': coin_data['ohlc']['c'],
+            'open': coin_data['ohlc']['o'],
             'high': coin_data['ohlc']['h'],
-            'low': coin_data['ohlc']['l']
+            'low': coin_data['ohlc']['l'],
+            'close': coin_data['ohlc']['c']
         })
 
-    print(results)
+    for r in results:
+        print(r)
 
 
 def main():
-    args = ['BTC,ETH,ETHFI,DOGE']
+    args = ['BTC,ETH,ETHFI,DOGE,ZETA']
     default(args)
 
 
