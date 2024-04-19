@@ -26,7 +26,7 @@ def default(args):
         results.append({
             'iso': coin_data['iso'],
             'name': coin_data['name'],
-            'date_time': datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z"),
+            'date_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S%z"),
             'current_price': coin_data['ohlc']['c'],
             'open': coin_data['ohlc']['o'],
             'high': coin_data['ohlc']['h'],
