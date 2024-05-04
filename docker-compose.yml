@@ -15,85 +15,86 @@ services:
       - broker-kafka
 
   kafka1:
-      image: confluentinc/cp-kafka:7.3.2
-      hostname: kafka1
-      container_name: kafka1
-      ports:
-        - "9092:9092"
-        - "29092:29092"
-      environment:
-        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
-        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-        KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
-        KAFKA_BROKER_ID: 1
-        KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
-        KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-        KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-        KAFKA_NUM_PARTITIONS: 4
-      depends_on:
-        - zoo1
-      networks:
-        - broker-kafka
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka1
+    container_name: kafka1
+    ports:
+      - "9092"
+      - "29092"  # New port for internal listener
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    depends_on:
+      - zoo1
+    networks:
+      - broker-kafka
 
   kafka2:
-      image: confluentinc/cp-kafka:7.3.2
-      hostname: kafka2
-      container_name: kafka2
-      ports:
-        - "9093:9093"
-        - "29093:29093"
-      environment:
-        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:19093,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093,DOCKER://host.docker.internal:29093
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
-        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-        KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
-        KAFKA_BROKER_ID: 2
-        KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
-        KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-        KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-        KAFKA_NUM_PARTITIONS: 4
-      depends_on:
-        - zoo1
-      networks:
-        - broker-kafka
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka2
+    container_name: kafka2
+    ports:
+      - "9093"
+      - "29093"  # New port for internal listener
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:19093,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093,DOCKER://host.docker.internal:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 2
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    depends_on:
+      - zoo1
+    networks:
+      - broker-kafka
 
   kafka3:
-      image: confluentinc/cp-kafka:7.3.2
-      hostname: kafka3
-      container_name: kafka3
-      ports:
-        - "9094:9094"
-        - "29094:29094"
-      environment:
-        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:19094,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,DOCKER://host.docker.internal:29094
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
-        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-        KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
-        KAFKA_BROKER_ID: 3
-        KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
-        KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-        KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-        KAFKA_NUM_PARTITIONS: 4
-      depends_on:
-        - zoo1
-      networks:
-        - broker-kafka
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka3
+    container_name: kafka3
+    ports:
+      - "9094"
+      - "29094"  # New port for internal listener
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:19094,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,DOCKER://host.docker.internal:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 3
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    depends_on:
+      - zoo1
+    networks:
+      - broker-kafka
 
   kafdrop:
-      image: obsidiandynamics/kafdrop:3.27.0
-      networks:
-        - broker-kafka
-      depends_on:
-        - zoo1
-      ports:
-        - "19000:9000"
-      environment:
-        KAFKA_BROKERCONNECT: kafka1:29092,kafka2:29093,kafka3:29094
+    image: obsidiandynamics/kafdrop:3.27.0
+    networks:
+      - broker-kafka
+    depends_on:
+      - zoo1
+    ports:
+      - "19000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka1:29092,kafka2:29093,kafka3:9094
 
   namenode:
     image: apache/hadoop:3
     hostname: namenode
+    container_name: namenode
     command: [ "hdfs", "namenode" ]
     depends_on:
       - resourcemanager
@@ -112,6 +113,7 @@ services:
 
   datanode1:
     image: apache/hadoop:3
+    container_name: datanode1
     command: [ "hdfs", "datanode" ]
     depends_on:
       - namenode
@@ -125,6 +127,7 @@ services:
 
   datanode2:
     image: apache/hadoop:3
+    container_name: datanode2
     command: [ "hdfs", "datanode" ]
     depends_on:
       - namenode
@@ -139,6 +142,7 @@ services:
   resourcemanager:
     image: apache/hadoop:3
     hostname: resourcemanager
+    container_name: resourcemanager
     command: [ "yarn", "resourcemanager" ]
     ports:
       - "8088:8088"
@@ -153,6 +157,7 @@ services:
   nodemanager:
     image: apache/hadoop:3
     hostname: nodemanager
+    container_name: nodemanager
     command: [ "yarn", "nodemanager" ]
     env_file:
       - ./config-hadoop
