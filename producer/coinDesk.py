@@ -1,8 +1,6 @@
 from datetime import datetime
 
 from requests import get
-import json
-import sys
 
 URL = 'https://production.api.coindesk.com/v2/tb/price/ticker?assets='
 
@@ -12,7 +10,6 @@ def default(args):
         raise Exception("Missing argument...")
 
     symbols = args[0]
-    print("Scrapping " + symbols)
     final_url = URL + symbols
     result = get(final_url)
     json_data = result.json()
@@ -34,12 +31,11 @@ def default(args):
             'close': coin_data['ohlc']['c']
         })
 
-    for r in results:
-        print(r)
+    return results
 
 
 def main():
-    args = ['BTC,ETH,ETHFI,DOGE,ZETA']
+    args = ['BTC,ETH,ETHFI,DOGE,ZETA,BNB,SHIB']
     default(args)
 
 

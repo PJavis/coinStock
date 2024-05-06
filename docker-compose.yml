@@ -19,7 +19,7 @@ services:
     hostname: kafka1
     container_name: kafka1
     ports:
-      - "9092"
+      - "9092:9092"
       - "29092"  # New port for internal listener
     environment:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
@@ -41,7 +41,7 @@ services:
     hostname: kafka2
     container_name: kafka2
     ports:
-      - "9093"
+      - "9093:9093"
       - "29093"  # New port for internal listener
     environment:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:19093,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093,DOCKER://host.docker.internal:29093
@@ -63,7 +63,7 @@ services:
     hostname: kafka3
     container_name: kafka3
     ports:
-      - "9094"
+      - "9094:9094"
       - "29094"  # New port for internal listener
     environment:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:19094,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,DOCKER://host.docker.internal:29094
@@ -80,16 +80,6 @@ services:
     networks:
       - broker-kafka
 
-  kafdrop:
-    image: obsidiandynamics/kafdrop:3.27.0
-    networks:
-      - broker-kafka
-    depends_on:
-      - zoo1
-    ports:
-      - "19000:9000"
-    environment:
-      KAFKA_BROKERCONNECT: kafka1:29092,kafka2:29093,kafka3:9094
 
   namenode:
     image: apache/hadoop:3

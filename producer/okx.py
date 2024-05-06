@@ -31,12 +31,11 @@ def default(args):
             'current_price': coin_data
         })
 
-    for r in results:
-        print(r)
+    return results
 
 
 def main():
-    args = ['BTC,ETH,ETHFI,DOGE,ZETA']
+    args = ['BTC,ETH,ETHFI,DOGE,ZETA,BNB,SHIB']
     default(args)
 
 
