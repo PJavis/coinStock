@@ -1,21 +1,23 @@
+import socket
+
+from script.utils import load_environment_variables
 from confluent_kafka import Producer
+from dotenv import load_dotenv
+from producer_utils import retrieve_real_time_data
 
-import coinDesk
-# Thiết lập các tham số kết nối tới Kafka broker
-
+load_dotenv()
+env_vars = load_environment_variables()
+# Configuration for Kafka Producer
 conf = {
-    'bootstrap.servers': 'localhost:9092',
-    'client.id': 'python-producer'
+    # Pointing to all three brokers
+    'bootstrap.servers': env_vars.get("KAFKA_BROKERS"),
+    'client.id': socket.gethostname(),
+    'enable.idempotence': True,
 }
-
-# Tạo một Kafka producer
 producer = Producer(conf)
 
-# Gửi một tin nhắn tới Kafka topic
-topic = 'coin_price'
-message = coinDesk.main()
-print(message)
-producer.produce(topic, value=message)
-
-# Đảm bảo rằng tất cả các tin nhắn đã được gửi đi
-producer.flush()
+if __name__ == '__main__':
+    retrieve_real_time_data(producer,
+                            env_vars.get("COINS"),
+                            env_vars.get("STOCK_PRICE_KAFKA_TOPIC"),
+                            )

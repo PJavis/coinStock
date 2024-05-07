@@ -32,12 +32,3 @@ def default(args):
         })
 
     return results
-
-
-def main():
-    args = ['BTC,ETH,ETHFI,DOGE,ZETA,BNB,SHIB']
-    default(args)
-
-
-if __name__ == "__main__":
-    main()
