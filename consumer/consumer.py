@@ -1,18 +1,25 @@
 from confluent_kafka import Consumer, KafkaError
 
-# Thiết lập các tham số kết nối tới Kafka broker
+from dotenv import load_dotenv
+
+from script.utils import load_environment_variables
+
+load_dotenv()
+
+env_vars = load_environment_variables()
+
 conf = {
-    'bootstrap.servers': 'localhost:9092',
-    'group.id': 'my_consumer_group',
-    'auto.offset.reset': 'earliest'
+     # Pointing to brokers. Ensure these match the host and ports of your Kafka brokers.
+     'bootstrap.servers': env_vars.get("KAFKA_BROKERS"),
+     'group.id': "myGroup",  # Consumer group ID. Change as per your requirement.
+     'auto.offset.reset': 'earliest'  # Start from the earliest messages if no offset is stored.
 }
 
 # Tạo một Kafka consumer
 consumer = Consumer(conf)
 
 # Đăng ký consumer với Kafka topic
-topic = 'coin_price'
-consumer.subscribe([topic])
+consumer.subscribe([env_vars.get("STOCK_PRICE_KAFKA_TOPIC")])
 
 # Lặp để đọc và in ra các tin nhắn
 while True:

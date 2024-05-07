@@ -33,7 +33,7 @@ def retrieve_real_time_data(producer, stock_symbol, kafka_topic):
         if is_market_open_bool:
             real_time_data = default(stock_symbols)
             for symbol_index, stock_symbol in enumerate(stock_symbols):
-                if not real_time_data.empty:
+                if not real_time_data:
                     real_time_data_point = real_time_data[symbol_index]
                     send_to_kafka(producer, kafka_topic, stock_symbol, symbol_index, real_time_data_point)
         else:
