@@ -24,18 +24,16 @@ def send_to_kafka(producer, topic, key, partition, message):
 
 def retrieve_real_time_data(producer, stock_symbol, kafka_topic):
     stock_symbols = stock_symbol.split(",") if stock_symbol else []
+    length = len(stock_symbols)
     if not stock_symbols:
         print(f"No stock symbols provided in the environment variable.")
         exit(1)
     while True:
         # Fetch real-time data for the last 1 minute
-        is_market_open_bool = True
-        if is_market_open_bool:
-            real_time_data = default(stock_symbols)
-            for symbol_index, stock_symbol in enumerate(stock_symbols):
-                if not real_time_data:
-                    real_time_data_point = real_time_data[symbol_index]
-                    send_to_kafka(producer, kafka_topic, stock_symbol, symbol_index, real_time_data_point)
+        real_time_data = default(stock_symbol)
+        for i in range(0, length):
+            real_time_data_point = real_time_data[i]
+            send_to_kafka(producer, kafka_topic, stock_symbol, stock_symbols[i], real_time_data_point)
         else:
             print("Market is closing")
         t.sleep(5)

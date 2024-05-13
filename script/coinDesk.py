@@ -9,12 +9,11 @@ def default(args):
     if len(args) == 0:
         raise Exception("Missing argument...")
 
-    symbols = args[0]
-    final_url = URL + symbols
+    final_url = URL + args
     result = get(final_url)
     json_data = result.json()
 
-    individual_symbols = symbols.split(',')
+    individual_symbols = args.split(',')
 
     results = []
 
