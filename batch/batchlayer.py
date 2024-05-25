@@ -1,29 +1,57 @@
-# Import các thư viện cần thiết
-from pyspark import SparkContext
 from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+from pyspark.sql import functions as F
+from pymongo import MongoClient
 
-# Khởi tạo Spark context và session
-sc = SparkContext("local", "Lambda Batch Layer")
-spark = SparkSession(sc)
+from operator import add
+import sys, os
+
+spark = SparkSession \
+    .builder \
+    .appName("HDFS to Spark") \
+    .master("local[*]") \
+    .getOrCreate()
+
+
+schema = StructType([
+  # Define schema fields based on your JSON data types
+  StructField("iso", StringType(), True),
+  StructField("name", StringType(), True),
+  StructField("date_time", StringType(), True),
+  StructField("current_price", DoubleType(), True), 
+  StructField("open_price", DoubleType(), True),
+  StructField("high_price", DoubleType(), True),
+  StructField("low_price", DoubleType(), True),
+  StructField("close_price", DoubleType(), True),
+    ])
 
 # Đường dẫn tới tập dữ liệu trên HDFS
-data_path = "hdfs://your-hadoop-cluster/path/to/your/data.csv"
+data_path = "hdfs://localhost:9000/user/root/input/data.csv"
 
-# Đọc dữ liệu từ tập tin CSV
-raw_data = spark.read.csv(data_path, header=True, inferSchema=True)
 
-# Xử lý dữ liệu theo lô (batch processing)
-def process_batch_data(data):
-    # Thực hiện các phép tính, lọc dữ liệu, tính toán, ...
-    # Ví dụ: tính tổng theo cột "amount"
-    result = data.groupBy("date").sum("amount")
-    return result
+try:
+  # Đọc dữ liệu JSON từ HDFS
+  df_raw = spark.read.schema(schema).csv(data_path)
 
-# Gọi hàm xử lý dữ liệu theo lô
-batch_result = process_batch_data(raw_data)
+  df_raw.cache()
 
-# Lưu kết quả vào cơ sở dữ liệu chỉ đọc (read-only database)
-batch_result.write.mode("overwrite").parquet("hdfs://your-hadoop-cluster/path/to/batch_views")
+  df_raw.show()
+  df_raw.printSchema()
+
+except Exception as e:
+  # Xử lý lỗi
+  print("Lỗi khi đọc dữ liệu:", e)
+
+
+# mongo_client = MongoClient("mongodb://localhost:27017/") 
+# mongo_db = mongo_client["mydata"] 
+# mongo_collection = mongo_db["coin"] 
+
+
+# df_dict = df_raw.rdd.map(lambda x: x.asDict()).collect()
+
+# mongo_collection.insert_many(df_dict)
+
 
 # Đóng Spark session
 spark.stop()
