@@ -35,22 +35,36 @@ try:
 
   df_raw.cache()
 
-  df_raw.show()
   df_raw.printSchema()
-
+  df_raw.show()
+  
 except Exception as e:
   # Xử lý lỗi
   print("Lỗi khi đọc dữ liệu:", e)
 
 
-# mongo_client = MongoClient("mongodb://localhost:27017/") 
-# mongo_db = mongo_client["mydata"] 
-# mongo_collection = mongo_db["coin"] 
+def batch_process_data():
+  df_with_avg_price = df.withColumn(
+      "average_price", (F.col("high_price") + F.col("low_price")) / 2
+    )
+  return df_with_avg_price
 
+ # Process the data
+df_processed = batch_process_data(df_raw)
 
-# df_dict = df_raw.rdd.map(lambda x: x.asDict()).collect()
+mongo_uri = "mongodb://localhost:27017/myDB"
+df_processed.write.format("com.mongodb.spark.sql.mongo") \
+.option("uri", mongo_uri) \
+.option("collection", "coin") \
+.save()
 
-# mongo_collection.insert_many(df_dict)
+mongo_uri = "mongodb://localhost:27017/myDB"
+df = spark.read.format("com.mongodb.spark.sql.DefaultSource") \
+    .option("uri", mongo_uri) \
+    .option("collection", "coin") \
+    .load()
+
+df.show()
 
 
 # Đóng Spark session
