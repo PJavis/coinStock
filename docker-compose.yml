@@ -80,7 +80,6 @@ services:
     networks:
       - broker-kafka
 
-
   namenode:
     image: apache/hadoop:3
     hostname: namenode
@@ -157,8 +156,132 @@ services:
       - hadoop:/home/
     restart: on-failure
 
+  spark-master:
+      image: docker.io/bitnami/spark:3.3
+      container_name: spark_master
+      environment:
+        - SPARK_MODE=master
+        - SPARK_DAEMON_JAVA_OPTS=-Dspark.ui.port=8085
+        - SPARK_RPC_AUTHENTICATION_ENABLED=no
+        - SPARK_RPC_ENCRYPTION_ENABLED=no
+        - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+        - SPARK_SSL_ENABLED=no
+        - SPARK_USER=spark
+      ports:
+        - "8080:8080"  # Spark Web UI
+        - "7077:7077"
+      depends_on:
+        - kafka1  # Ensure Kafka is up before starting Spark
+        - kafka2
+        - kafka3
+      volumes:
+        - ./:/app/ # Mount your Spark Streaming app
+      restart: unless-stopped
+      networks:
+        - broker-kafka
+
+  spark-submit:
+      image: docker.io/bitnami/spark:3.3
+      container_name: spark_speed
+      environment:
+        INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
+        INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
+        INFLUX_ORG: ${INFLUX_ORG}
+        INFLUX_TOKEN: ${INFLUX_TOKEN}
+      volumes:
+        - ./:/app/
+        - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar
+      command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py" ]
+      depends_on:
+        - spark-master
+      # restart: unless-stopped
+      networks:
+        - broker-kafka
+
+  spark-submit2:
+    image: docker.io/bitnami/spark:3.3
+    container_name: spark_batch
+    volumes:
+      - ./:/app/
+    command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batch_processing.py" ]
+    depends_on:
+      - spark-master
+    networks:
+      - broker-kafka
+
+  spark-worker:
+    image: docker.io/bitnami/spark:3.3
+    container_name: spark-worker1
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 1G
+      SPARK_WORKER_CORES: 1
+      SPARK_RPC_AUTHENTICATION_ENABLED: no
+      SPARK_RPC_ENCRYPTION_ENABLED: no
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+      SPARK_SSL_ENABLED: no
+      SPARK_USER: spark
+    ports:
+      - "8081:8081"
+    networks:
+      - broker-kafka
+
+  spark-worker2:
+    image: docker.io/bitnami/spark:3.3
+    container_name: spark-worker2
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 1G
+      SPARK_WORKER_CORES: 1
+      SPARK_RPC_AUTHENTICATION_ENABLED: no
+      SPARK_RPC_ENCRYPTION_ENABLED: no
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+      SPARK_SSL_ENABLED: no
+      SPARK_USER: spark
+    ports:
+      - "8082:8082"
+    networks:
+      - broker-kafka
+  influxdb:
+      image: bitnami/influxdb:2.5.1
+      container_name: influxdb
+      restart: always
+      ports:
+        - "8086:8086"
+      volumes:
+        - .\influxdb:/bitnami/influxdb
+      environment:
+        INFLUXDB_ADMIN_USER_PASSWORD: ${INFLUXDB_ADMIN_USER_PASSWORD}
+        INFLUXDB_USER: ${INFLUXDB_USER}
+        INFLUXDB_USER_PASSWORD: ${INFLUXDB_USER_PASSWORD}
+        INFLUXDB_ADMIN_USER_TOKEN: ${INFLUX_TOKEN}
+
+        INFLUXDB_DB: ${INFLUXDB_DB}   # the database to be created on first startup
+        INFLUXDB_HTTP_AUTH_ENABLED: true  # enable http auth
+        INFLUX_TOKEN: ${INFLUX_TOKEN}
+        INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
+        INFLUX_ORG: ${INFLUX_ORG}
+        INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
+      networks:
+        - broker-kafka
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - broker-kafka
 volumes:
   hadoop:
+  mongodb-data:
 
 networks:
   broker-kafka:
