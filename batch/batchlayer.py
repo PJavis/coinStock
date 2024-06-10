@@ -15,6 +15,9 @@ spark = SparkSession.builder \
 # Setup the HDFS client
 hdfs = pyhdfs.HdfsClient(hosts="namenode:9870", user_name="hdfs")
 directory = '/data'
+if not hdfs.exists(directory):
+    # Tạo thư mục mới nếu chưa tồn tại
+    hdfs.mkdirs(directory)
 files = hdfs.listdir(directory)
 print("Files in '{}':".format(directory), files)
 
