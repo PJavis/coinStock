@@ -1,15 +1,20 @@
-import findspark
-import hdfs
 import json
-
 from datetime import datetime
+from pathlib import Path
+
+import findspark
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
+import hdfs
 from InfluxDBWriter import InfluxDBWriter
 from script.utils import load_environment_variables
+
+path_to_utils = Path(__file__).parent.parent
+sys.path.insert(0, str(path_to_utils))
+sys.path.append("/app")
 
 load_dotenv()
 findspark.init()
@@ -87,3 +92,12 @@ if __name__ == "__main__":
             print("----------------------")
             hdfs.write_to_hdfs(json_string)
         print(f"Batch processed {batch_id} done!")
+
+
+    query = stockDataframe \
+        .writeStream \
+        .foreachBatch(process_batch) \
+        .outputMode("append") \
+        .start()
+
+    query.awaitTermination()

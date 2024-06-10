@@ -1,7 +1,7 @@
 import pyhdfs
 import uuid
 
-hdfs = pyhdfs.HdfsClient(hosts="localhost:9870", user_name="hdfs")
+hdfs = pyhdfs.HdfsClient(hosts="namenode:9870", user_name="hdfs")
 
 userhomedir = hdfs.get_home_directory()
 # print(userhomedir)
