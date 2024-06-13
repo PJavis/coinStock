@@ -203,7 +203,15 @@ services:
     container_name: spark_batch
     volumes:
       - ./:/app/
-    command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/batchlayer.py" ]
+    environment:
+      - PYTHONPATH=/app
+      - PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/bitnami/python/bin:$PATH
+    command: >
+      bash -c "pip install -r /app/requirements.txt &&
+               /opt/bitnami/spark/bin/spark-submit 
+               --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3,org.mongodb.spark:mongo-spark-connector_2.12:10.0.0 
+               --master spark://spark-master:7077 
+               /app/consumer/batchlayer.py"
     depends_on:
       - spark-master
     networks:
