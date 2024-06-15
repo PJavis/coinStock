@@ -181,42 +181,40 @@ services:
         - broker-kafka
 
   spark-submit:
-      image: docker.io/bitnami/spark:3.3
-      container_name: spark_speed
-      environment:
-        INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
-        INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
-        INFLUX_ORG: ${INFLUX_ORG}
-        INFLUX_TOKEN: ${INFLUX_TOKEN}
-      volumes:
-        - ./:/app/
-        - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar
-      command: [ "sh", "-c", "pip install -r /app/requirements.txt && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 --master spark://spark-master:7077 /app/consumer/consumer.py" ]
-      depends_on:
-        - spark-master
-      # restart: unless-stopped
-      networks:
-        - broker-kafka
-
-  spark-submit2:
-    image: docker.io/bitnami/spark:3.3
-    container_name: spark_batch
+    image: my-spark-image
+    container_name: spark_speed
+    environment:
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
+      INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
+      INFLUX_ORG: ${INFLUX_ORG}
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
     volumes:
       - ./:/app/
-    environment:
-      - PYTHONPATH=/app
-      - PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/bitnami/python/bin:$PATH
+      - ./packages/postgresql-42.5.4.jar:/opt/bitnami/spark/jars/postgresql-42.5.4.jar
     command: >
-      bash -c "pip install -r /app/requirements.txt &&
-               /opt/bitnami/spark/bin/spark-submit 
-               --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3,org.mongodb.spark:mongo-spark-connector_2.12:10.0.0 
-               --master spark://spark-master:7077 
-               /app/consumer/batchlayer.py"
+      /opt/bitnami/spark/bin/spark-submit 
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3 
+      --master spark://spark-master:7077 
+      /app/consumer/consumer.py
     depends_on:
       - spark-master
     networks:
       - broker-kafka
 
+  spark-submit2:
+    image: my-spark-image
+    container_name: spark_batch
+    volumes:
+      - ./:/app/
+    command: >
+      /opt/bitnami/spark/bin/spark-submit 
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.3
+      --master spark://spark-master:7077 
+      /app/consumer/batchlayer.py
+    depends_on:
+      - spark-master
+    networks:
+      - broker-kafka
   spark-worker:
     image: docker.io/bitnami/spark:3.3
     container_name: spark-worker1
