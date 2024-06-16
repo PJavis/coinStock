@@ -1,11 +1,8 @@
 import json
 
 import pyhdfs
-from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml.feature import VectorAssembler
-from pyspark.ml.regression import LinearRegression
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import lit
+from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 # Initialize Spark Session
@@ -59,45 +56,42 @@ for file in files:
 # Remove duplicates
 df = df.dropDuplicates()
 
-# Filter out Bitcoin data and prepare it as a feature
-btc_df = df.filter(df.iso == 'BTC').select("date_time", df.current_price.alias("btc_price"))
+basic_stats_t = df.groupBy("iso").agg(
+    F.mean("open").alias("avg_open"),
+    F.mean("high").alias("avg_high"),
+    F.mean("low").alias("avg_low"),
+    F.mean("close").alias("avg_close"),
+    F.stddev("close").alias("std_dev_close"),
+    F.max("high").alias("historical_high"),
+    F.min("low").alias("historical_low")
+)
 
-# Join BTC data with the main dataframe on date_time
-df = df.join(btc_df, on="date_time")
+basic_stats_t.show()
+# Calculate price change for each crypto
+df = df.withColumn("price_change", (df.close - df.open) / df.open)
 
-# Assemble features for ML model
-assembler = VectorAssembler(inputCols=["btc_price"], outputCol="features")
-df = assembler.transform(df)
+# Basic Statistics for each stock
+basic_stats = df.groupBy("iso").agg(
+    F.mean("price_change").alias("avg_price_change"),
+    F.stddev("price_change").alias("std_dev_price_change")
+)
 
-# Define the model
-lr = LinearRegression(featuresCol="features", labelCol="current_price")
+# K-Means Model
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.clustering import KMeans
 
-# Train the model for each cryptocurrency excluding BTC
-results = []
-cryptos = df.select("iso").distinct().filter(df.iso != 'BTC').collect()
-for crypto in cryptos:
-    iso = crypto.iso
-    crypto_df = df.filter(df.iso == lit(iso))
+input_cols = ["avg_price_change", "std_dev_price_change"]
+vec_assembler = VectorAssembler(inputCols=input_cols, outputCol="features")
+df_kmeans = vec_assembler.transform(basic_stats)
 
-    if crypto_df.count() > 0:
-        train, test = crypto_df.randomSplit([0.8, 0.2], seed=42)
-        lr_model = lr.fit(train)
-        predictions = lr_model.transform(test)
+kmeans = KMeans().setK(2).setSeed(1).setFeaturesCol("features")
+model = kmeans.fit(df_kmeans)
 
-        evaluator = RegressionEvaluator(labelCol="current_price", predictionCol="prediction", metricName="r2")
-        r2 = evaluator.evaluate(predictions)
+# Predict clusters for each crypto
+predictions = model.transform(df_kmeans)
+predictions.select("iso", "prediction").show()
 
-        results.append((iso, r2))
-
-# Convert results to DataFrame
-results_df = spark.createDataFrame(results, ["iso", "r2_score"])
-
-# Show the results
-results_df.show()
-
-# Write the results DataFrame to MongoDB
-results_df.write.format("mongo").mode("append").option("database", "bigdata").option("collection",
-                                                                                     "crypto_dependency").save()
+basic_stats.write.format("mongo").mode("append").save()
 
 # Stop SparkSession
 spark.stop()
