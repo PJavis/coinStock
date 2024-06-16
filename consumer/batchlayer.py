@@ -1,46 +1,45 @@
 import json
 
 import pyhdfs
+from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.regression import LinearRegression
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql.functions import lit
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 # Initialize Spark Session
 spark = SparkSession.builder \
-    .appName("Stock Analysis") \
+    .appName("Crypto Dependency Analysis") \
     .config("spark.mongodb.output.uri", "mongodb://root:admin@mongodb:27017/bigdata.stock2024") \
     .getOrCreate()
 
-# Setup the HDFS client
+# Set up the HDFS client
 hdfs = pyhdfs.HdfsClient(hosts="namenode:9870", user_name="hdfs")
 directory = '/data'
 if not hdfs.exists(directory):
-    # Tạo thư mục mới nếu chưa tồn tại
     hdfs.mkdirs(directory)
 files = hdfs.listdir(directory)
 print("Files in '{}':".format(directory), files)
 
 # Define the schema for the DataFrame
 schema = StructType([
-        StructField("iso", StringType(), True),
-        StructField("name", StringType(), True),
-        StructField("current_price", DoubleType(), True),
-        StructField("open", DoubleType(), True),
-        StructField("high", DoubleType(), True),
-        StructField("low", DoubleType(), True),
-        StructField("close", DoubleType(), True),
-        StructField("date_time", StringType(), True)
-    ])
+    StructField("iso", StringType(), True),
+    StructField("name", StringType(), True),
+    StructField("current_price", DoubleType(), True),
+    StructField("open", DoubleType(), True),
+    StructField("high", DoubleType(), True),
+    StructField("low", DoubleType(), True),
+    StructField("close", DoubleType(), True),
+    StructField("date_time", StringType(), True)
+])
 
 
 # Function to create a DataFrame from a file's content
 def create_dataframe_from_file(file_path):
     try:
-        # Read the file content
         file_content = hdfs.open(file_path).read().decode('utf-8')
-        # Convert JSON content to Python dictionary
         data = json.loads(file_content)
-        # Create a DataFrame using the defined schema
         return spark.createDataFrame([data], schema)
     except Exception as e:
         print("Failed to read '{}': {}".format(file_path, e))
@@ -60,22 +59,45 @@ for file in files:
 # Remove duplicates
 df = df.dropDuplicates()
 
-# Basic Statistics for each stock
-basic_stats = df.groupBy("iso").agg(
-    F.mean("open").alias("avg_open"),
-    F.mean("high").alias("avg_high"),
-    F.mean("low").alias("avg_low"),
-    F.mean("close").alias("avg_close"),
-    F.stddev("close").alias("std_dev_close"),
-    F.max("high").alias("historical_high"),
-    F.min("low").alias("historical_low")
-)
+# Filter out Bitcoin data and prepare it as a feature
+btc_df = df.filter(df.iso == 'BTC').select("date_time", df.current_price.alias("btc_price"))
 
-# Show basic statistics
-basic_stats.show()
+# Join BTC data with the main dataframe on date_time
+df = df.join(btc_df, on="date_time")
 
-# Write basic_stats DataFrame to MongoDB
-basic_stats.write.format("mongo").mode("append").save()
+# Assemble features for ML model
+assembler = VectorAssembler(inputCols=["btc_price"], outputCol="features")
+df = assembler.transform(df)
+
+# Define the model
+lr = LinearRegression(featuresCol="features", labelCol="current_price")
+
+# Train the model for each cryptocurrency excluding BTC
+results = []
+cryptos = df.select("iso").distinct().filter(df.iso != 'BTC').collect()
+for crypto in cryptos:
+    iso = crypto.iso
+    crypto_df = df.filter(df.iso == lit(iso))
+
+    if crypto_df.count() > 0:
+        train, test = crypto_df.randomSplit([0.8, 0.2], seed=42)
+        lr_model = lr.fit(train)
+        predictions = lr_model.transform(test)
+
+        evaluator = RegressionEvaluator(labelCol="current_price", predictionCol="prediction", metricName="r2")
+        r2 = evaluator.evaluate(predictions)
+
+        results.append((iso, r2))
+
+# Convert results to DataFrame
+results_df = spark.createDataFrame(results, ["iso", "r2_score"])
+
+# Show the results
+results_df.show()
+
+# Write the results DataFrame to MongoDB
+results_df.write.format("mongo").mode("append").option("database", "bigdata").option("collection",
+                                                                                     "crypto_dependency").save()
 
 # Stop SparkSession
 spark.stop()

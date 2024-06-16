@@ -273,7 +273,17 @@ services:
         INFLUXDB_MEASUREMENT: ${INFLUXDB_MEASUREMENT}
       networks:
         - broker-kafka
-
+  grafana:
+    image: grafana/grafana-oss:8.4.3
+    container_name: grafana
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+    depends_on:
+      - influxdb
+    ports:
+      - '3000:3000'
+    networks:
+      - broker-kafka
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -289,6 +299,7 @@ services:
 volumes:
   hadoop:
   mongodb-data:
+  grafana-storage:
 
 networks:
   broker-kafka:

@@ -40,7 +40,7 @@ if __name__ == "__main__":
         .getOrCreate()
     )
 
-    spark.sparkContext.setLogLevel("INFO")
+    spark.sparkContext.setLogLevel("ERROR")
 
     stockDataframe = spark \
         .readStream \
