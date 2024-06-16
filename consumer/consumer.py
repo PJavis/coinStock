@@ -1,9 +1,9 @@
 import json
-from datetime import datetime
 from pathlib import Path
 
 import findspark
 from dotenv import load_dotenv
+from influxdb_client.client.warnings import MissingPivotFunction
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
@@ -12,6 +12,9 @@ import hdfs
 from InfluxDBWriter import InfluxDBWriter
 from script.utils import load_environment_variables
 
+warnings.simplefilter("ignore", MissingPivotFunction)
+
+# Initialize findspark and load environment variables
 path_to_utils = Path(__file__).parent.parent
 sys.path.insert(0, str(path_to_utils))
 sys.path.append("/app")
@@ -19,8 +22,8 @@ sys.path.append("/app")
 load_dotenv()
 findspark.init()
 env_vars = load_environment_variables()
-KAFKA_TOPIC_NAME = env_vars.get("STOCK_PRICE_KAFKA_TOPIC")
-KAFKA_BOOTSTRAP_SERVERS = env_vars.get("KAFKA_BROKERS")
+KAFKA_TOPIC_NAME = "coin_price"
+KAFKA_BOOTSTRAP_SERVERS = "kafka1:19092,kafka2:19093,kafka3:19094"
 
 scala_version = '2.12'
 spark_version = '3.3.3'
@@ -37,7 +40,7 @@ if __name__ == "__main__":
         .getOrCreate()
     )
 
-    spark.sparkContext.setLogLevel("ERROR")
+    spark.sparkContext.setLogLevel("INFO")
 
     stockDataframe = spark \
         .readStream \
@@ -56,21 +59,24 @@ if __name__ == "__main__":
         StructField("open", DoubleType(), True),
         StructField("high", DoubleType(), True),
         StructField("low", DoubleType(), True),
-        StructField("close", DoubleType(), True)
+        StructField("close", DoubleType(), True),
+        StructField("date_time", StringType(), True)
     ])
 
     # Parse JSON data and select columns
     stockDataframe = inputStream.select(from_json(col("data"), stock_price_schema).alias("stock_price"))
     expandedDf = stockDataframe.select("stock_price.*")
     influxdb_writer = InfluxDBWriter('primary', 'stock-price-v1')
-    # influxdb_writer = InfluxDBWriter(os.environ.get("INFLUXDB_BUCKET"), os.environ.get("INFLUXDB_MEASUREMENT"))
     print("InfluxDB_Init Done")
 
 
     def process_batch(batch_df, batch_id):
+        print(f"Processing batch {batch_id} with {batch_df.count()} records")
+        batch_df.show(5)  # Show the first 5 records in the batch
+
         for row in batch_df.collect():
             stock_price = row["stock_price"]
-            timestamp = stock_price["date_time"]
+            timestamp = stock_price["date_time"]  # Already in correct format
             tags = {"iso": stock_price["iso"], "name": stock_price["name"]}
             fields = {
                 "open": stock_price['open'],
@@ -80,10 +86,6 @@ if __name__ == "__main__":
                 "current_price": stock_price['current_price']
             }
             influxdb_writer.process(timestamp, tags, fields)
-
-            # Convert timestamp to ISO format
-            row["stock_price"]["date_time"] = datetime.strptime(row["stock_price"]["date_time"],
-                                                                "%Y-%m-%d %H:%M:%S%z").isoformat()
 
             # Convert Row to a dictionary
             row_dict = row["stock_price"]

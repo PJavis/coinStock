@@ -3,7 +3,6 @@ import json
 import pyhdfs
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 
 # Initialize Spark Session
@@ -23,15 +22,15 @@ print("Files in '{}':".format(directory), files)
 
 # Define the schema for the DataFrame
 schema = StructType([
-    StructField("iso", StringType(), True),
-    StructField("name", StringType(), True),
-    StructField("date_time", StringType(), True),
-    StructField("current_price", DoubleType(), True),
-    StructField("open", DoubleType(), True),
-    StructField("high", DoubleType(), True),
-    StructField("low", DoubleType(), True),
-    StructField("close", DoubleType(), True)
-])
+        StructField("iso", StringType(), True),
+        StructField("name", StringType(), True),
+        StructField("current_price", DoubleType(), True),
+        StructField("open", DoubleType(), True),
+        StructField("high", DoubleType(), True),
+        StructField("low", DoubleType(), True),
+        StructField("close", DoubleType(), True),
+        StructField("date_time", StringType(), True)
+    ])
 
 
 # Function to create a DataFrame from a file's content
@@ -56,8 +55,6 @@ for file in files:
     file_path = "{}/{}".format(directory, file)
     file_df = create_dataframe_from_file(file_path)
     if file_df:
-        # Convert "date_time" column to TimestampType
-        file_df = file_df.withColumn("date_time", to_timestamp(file_df["date_time"], "yyyy-MM-dd HH:mm:ssZ"))
         df = df.unionByName(file_df)
 
 # Remove duplicates
